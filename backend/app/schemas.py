@@ -98,3 +98,24 @@ class LineageOut(BaseModel):
     finished_at: datetime | None
     started_by: str
     version: int
+
+
+class ReplayStep(BaseModel):
+    version: int
+    event_type: str
+    occurred_at: datetime
+    actor: str
+    status: str
+    metric_count: int
+    artifact_count: int
+    result_summary: str | None
+    abort_reason: str | None
+    finished_at: datetime | None
+
+
+class ReplayOut(BaseModel):
+    run_id: UUID
+    project: str
+    name: str
+    total_versions: int
+    steps: list[ReplayStep]

@@ -15,6 +15,7 @@ from app.cqrs import (
     list_events,
     rebuild_projection_from_events,
     record_metric,
+    replay_run_steps,
     start_run,
 )
 from app.database import Base
@@ -218,3 +219,96 @@ def test_cannot_command_before_start(db):
             step=0,
             expected_version=0,
         )
+
+
+def _build_completed_run(db):
+    run = start_run(
+        db,
+        actor="researcher",
+        project="p1",
+        name="replay-me",
+        dataset_content_sha256=sha("ds-replay"),
+        code_commit_sha="cafebabe",
+        description=None,
+    )
+    run = record_metric(
+        db,
+        run_id=run.id,
+        actor="researcher",
+        name="acc",
+        value=0.8,
+        step=1,
+        expected_version=run.version,
+    )
+    run = attach_artifact(
+        db,
+        run_id=run.id,
+        actor="researcher",
+        name="model.bin",
+        uri="file:///tmp/model.bin",
+        content_sha256=sha("model-replay"),
+        media_type="application/octet-stream",
+        expected_version=run.version,
+    )
+    return complete_run(
+        db,
+        run_id=run.id,
+        actor="researcher",
+        result_summary="done",
+        expected_version=run.version,
+    )
+
+
+def test_replay_steps_track_each_version(db):
+    run = _build_completed_run(db)
+
+    steps = replay_run_steps(db, run.id)
+
+    assert [s["version"] for s in steps] == [1, 2, 3, 4]
+    assert [s["event_type"] for s in steps] == [
+        "RunStarted",
+        "MetricRecorded",
+        "ArtifactAttached",
+        "RunCompleted",
+    ]
+    # 逐步前进时能看到状态从进行中变为已完成
+    assert [s["status"] for s in steps] == ["running", "running", "running", "completed"]
+    assert [s["metric_count"] for s in steps] == [0, 1, 1, 1]
+    assert [s["artifact_count"] for s in steps] == [0, 0, 1, 1]
+    assert steps[-1]["result_summary"] == "done"
+    assert steps[-1]["finished_at"] is not None
+    assert all(s["finished_at"] is None for s in steps[:-1])
+
+
+def test_replay_does_not_touch_official_projection(db):
+    run = _build_completed_run(db)
+    stored = db.get(RunProjection, run.id)
+    snapshot = (
+        stored.version,
+        stored.status,
+        len(stored.metrics_json),
+        len(stored.artifacts_json),
+        stored.result_summary,
+    )
+
+    steps = replay_run_steps(db, run.id)
+
+    assert steps[-1]["version"] == snapshot[0]
+    # 回放只在内存中折叠：session 没有任何待写入/待提交的变更
+    assert not db.new
+    assert not db.dirty
+    db.expire_all()
+    stored = db.get(RunProjection, run.id)
+    assert (
+        stored.version,
+        stored.status,
+        len(stored.metrics_json),
+        len(stored.artifacts_json),
+        stored.result_summary,
+    ) == snapshot
+
+
+def test_replay_unknown_run_raises_404(db):
+    with pytest.raises(DomainError) as excinfo:
+        replay_run_steps(db, uuid4())
+    assert excinfo.value.status_code == 404

@@ -90,6 +90,7 @@ const columns = [
           h(NButton, { size: 'tiny', onClick: () => router.push(`/runs/${row.id}`) }, { default: () => '详情' }),
           h(NButton, { size: 'tiny', quaternary: true, onClick: () => router.push(`/runs/${row.id}/events`) }, { default: () => '事件' }),
           h(NButton, { size: 'tiny', quaternary: true, onClick: () => router.push(`/runs/${row.id}/lineage`) }, { default: () => '血缘' }),
+          h(NButton, { size: 'tiny', quaternary: true, onClick: () => router.push(`/replay?run=${row.id}`) }, { default: () => '回放' }),
         ],
       )
     },

@@ -62,8 +62,9 @@ pytest -q
 4. 在详情页记录指标、挂载产物，再 Complete（或 Abort）
 5. 打开「事件时间线」确认 version 递增的原始事件
 6. 打开「血缘」确认 code_commit、dataset 指纹、artifacts、metrics
-7. 健康检查：`GET http://localhost:8173/api/health`
-8. 用 `auditor` 登录：可看列表/事件/血缘，命令按钮不可用
+7. 打开「事件回放」，选定一个已完成 Run：从第 1 版起点「下一版」逐步前进，能看到状态从进行中变为已完成、度量条数与附件件数逐步增长；「复位」回到第 1 版。回放为只读演示，不改动正式投影
+8. 健康检查：`GET http://localhost:8173/api/health`
+9. 用 `auditor` 登录：可看列表/事件/血缘，命令按钮不可用，且可正常操作事件回放
 
 终态或 `expected_version` 不匹配时，API 返回 **409**。
 
@@ -73,3 +74,4 @@ pytest -q
 - **事件**：`RunStarted` / `MetricRecorded` / `ArtifactAttached` / `RunCompleted` / `RunAborted`
 - **event_store**：`(aggregate_id, version)` 唯一；冲突 → 409
 - **run_projections**：查询侧投影（状态、指标、产物等）
+- **事件回放**：`GET /api/runs/{id}/replay` 在内存中按 version 逐步折叠事件，返回每一步之后的状态/度量条数/附件件数；纯只读，不写入 `run_projections`，无需复位。前端 `/replay` 页从第 1 版起每次只前进一版，研究员与审计员均可使用

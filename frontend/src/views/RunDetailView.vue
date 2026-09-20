@@ -12,6 +12,7 @@
       <div style="display: flex; gap: 8px">
         <n-button @click="$router.push(`/runs/${run.id}/events`)">事件时间线</n-button>
         <n-button @click="$router.push(`/runs/${run.id}/lineage`)">血缘</n-button>
+        <n-button @click="$router.push(`/replay?run=${run.id}`)">事件回放</n-button>
       </div>
     </div>
 

@@ -317,3 +317,36 @@ def rebuild_projection_from_events(db: Session, run_id: UUID) -> RunProjection |
     for event in events:
         proj = _apply_event_to_projection(proj, event)
     return proj
+
+
+def replay_run_steps(db: Session, run_id: UUID) -> list[dict[str, Any]]:
+    """只读回放：按 version 在内存中逐步折叠事件，返回每一步之后的状态快照。
+
+    折叠产物是未加入 session 的临时对象，绝不写入 run_projections，
+    因此回放不会影响正式投影，也无需复位任何数据库状态。
+    """
+    events = list_events(db, run_id)
+    if not events:
+        if _get_projection(db, run_id) is None:
+            raise DomainError("Run 不存在", status_code=404)
+        return []
+
+    proj: RunProjection | None = None
+    steps: list[dict[str, Any]] = []
+    for event in events:
+        proj = _apply_event_to_projection(proj, event)
+        steps.append(
+            {
+                "version": event.version,
+                "event_type": event.event_type,
+                "occurred_at": event.occurred_at,
+                "actor": event.actor,
+                "status": proj.status,
+                "metric_count": len(proj.metrics_json or []),
+                "artifact_count": len(proj.artifacts_json or []),
+                "result_summary": proj.result_summary,
+                "abort_reason": proj.abort_reason,
+                "finished_at": proj.finished_at,
+            }
+        )
+    return steps

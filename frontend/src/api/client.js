@@ -77,4 +77,9 @@ export async function getLineage(id) {
   return data
 }
 
+export async function getReplay(id) {
+  const { data } = await api.get(`/runs/${id}/replay`)
+  return data
+}
+
 export default api

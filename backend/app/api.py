@@ -13,6 +13,7 @@ from app.cqrs import (
     complete_run,
     list_events,
     record_metric,
+    replay_run_steps,
     start_run,
 )
 from app.database import get_db
@@ -25,6 +26,7 @@ from app.schemas import (
     LineageOut,
     LoginRequest,
     RecordMetricCommand,
+    ReplayOut,
     RunOut,
     StartRunCommand,
     TokenResponse,
@@ -197,6 +199,29 @@ def get_events(
             raise HTTPException(status_code=404, detail="Run 不存在")
         return events
     return list_events(db, run_id)
+
+
+@router.get("/runs/{run_id}/replay", response_model=ReplayOut)
+def get_replay(
+    run_id: UUID,
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """只读事件回放：在内存中逐版折叠事件，不触碰正式投影。研究员与审计员均可用。"""
+    proj = db.get(RunProjection, run_id)
+    if not proj:
+        raise HTTPException(status_code=404, detail="Run 不存在")
+    try:
+        steps = replay_run_steps(db, run_id)
+    except DomainError as exc:
+        _handle_domain(exc)
+    return ReplayOut(
+        run_id=proj.id,
+        project=proj.project,
+        name=proj.name,
+        total_versions=len(steps),
+        steps=steps,
+    )
 
 
 @router.get("/runs/{run_id}/lineage", response_model=LineageOut)
