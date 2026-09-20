@@ -317,3 +317,32 @@ def rebuild_projection_from_events(db: Session, run_id: UUID) -> RunProjection |
     for event in events:
         proj = _apply_event_to_projection(proj, event)
     return proj
+
+
+def replay_projection_at_version(
+    db: Session, run_id: UUID, version: int
+) -> tuple[RunProjection, EventStore, int, int]:
+    """只读回放：把 run 折叠到第 ``version`` 版事件之后的临时状态。
+
+    全程不 ``db.add`` / ``db.commit``，折叠结果是游离（transient）投影对象，
+    与 ``run_projections`` 正式投影互不影响，请求结束即被丢弃，天然可复位。
+
+    返回 ``(临时投影, 本步应用的事件, 实际到达版本, 事件总数)``。
+    """
+    if version < 1:
+        raise DomainError("回放必须从第 1 版开始", status_code=400)
+
+    events = list_events(db, run_id)
+    if not events:
+        raise DomainError("Run 不存在", status_code=404)
+
+    total = len(events)
+    target = min(version, total)
+
+    proj: RunProjection | None = None
+    applied: EventStore | None = None
+    for event in events[:target]:
+        proj = _apply_event_to_projection(proj, event)
+        applied = event
+    assert proj is not None and applied is not None
+    return proj, applied, target, total

@@ -98,3 +98,34 @@ class LineageOut(BaseModel):
     finished_at: datetime | None
     started_by: str
     version: int
+
+
+class ReplayEventOut(BaseModel):
+    version: int
+    event_type: str
+    actor: str
+    occurred_at: datetime
+
+
+class ReplaySnapshotOut(BaseModel):
+    """只读回放：折叠到第 version 版事件之后的临时状态（非正式投影）。"""
+
+    run_id: UUID
+    requested_version: int
+    version: int
+    total_versions: int
+    at_end: bool
+    status: str
+    project: str
+    name: str
+    description: str | None
+    started_at: datetime
+    finished_at: datetime | None
+    started_by: str
+    result_summary: str | None
+    abort_reason: str | None
+    metric_count: int
+    artifact_count: int
+    metrics: list[Any]
+    artifacts: list[Any]
+    current_event: ReplayEventOut

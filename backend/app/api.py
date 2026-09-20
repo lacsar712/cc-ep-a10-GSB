@@ -13,6 +13,7 @@ from app.cqrs import (
     complete_run,
     list_events,
     record_metric,
+    replay_projection_at_version,
     start_run,
 )
 from app.database import get_db
@@ -25,6 +26,8 @@ from app.schemas import (
     LineageOut,
     LoginRequest,
     RecordMetricCommand,
+    ReplayEventOut,
+    ReplaySnapshotOut,
     RunOut,
     StartRunCommand,
     TokenResponse,
@@ -197,6 +200,51 @@ def get_events(
             raise HTTPException(status_code=404, detail="Run 不存在")
         return events
     return list_events(db, run_id)
+
+
+@router.get("/runs/{run_id}/replay", response_model=ReplaySnapshotOut)
+def get_replay(
+    run_id: UUID,
+    version: int = Query(ge=1),
+    db: Session = Depends(get_db),
+    _user: dict = Depends(get_current_user),
+):
+    """只读演示：把 Run 折叠到第 version 版事件之后的临时状态。
+
+    不读取也不修改 run_projections，仅从 event_store 在内存中折叠，
+    正式投影不受影响；审计员（只读角色）同样可调用。
+    """
+    try:
+        proj, applied, reached, total = replay_projection_at_version(db, run_id, version)
+    except DomainError as exc:
+        _handle_domain(exc)
+
+    return ReplaySnapshotOut(
+        run_id=run_id,
+        requested_version=version,
+        version=reached,
+        total_versions=total,
+        at_end=reached >= total,
+        status=proj.status,
+        project=proj.project,
+        name=proj.name,
+        description=proj.description,
+        started_at=proj.started_at,
+        finished_at=proj.finished_at,
+        started_by=proj.started_by,
+        result_summary=proj.result_summary,
+        abort_reason=proj.abort_reason,
+        metric_count=len(proj.metrics_json or []),
+        artifact_count=len(proj.artifacts_json or []),
+        metrics=proj.metrics_json or [],
+        artifacts=proj.artifacts_json or [],
+        current_event=ReplayEventOut(
+            version=applied.version,
+            event_type=applied.event_type,
+            actor=applied.actor,
+            occurred_at=applied.occurred_at,
+        ),
+    )
 
 
 @router.get("/runs/{run_id}/lineage", response_model=LineageOut)

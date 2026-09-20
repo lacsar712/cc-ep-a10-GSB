@@ -32,6 +32,101 @@ a {
   padding: 24px 20px 48px;
 }
 
+.login-shell {
+  min-height: 100vh;
+}
+
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 14px;
+  border-right: 1px solid var(--line);
+  background: rgba(255, 255, 255, 0.9);
+  position: sticky;
+  top: 0;
+  height: 100vh;
+}
+
+.sidebar .brand {
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 0 8px 16px;
+  line-height: 1.4;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+}
+
+.sidebar-nav a {
+  padding: 9px 12px;
+  border-radius: 8px;
+  color: var(--ink);
+  font-size: 14px;
+}
+
+.sidebar-nav a:hover {
+  background: #eef3f6;
+}
+
+.sidebar-nav a.router-link-active {
+  background: rgba(15, 118, 110, 0.1);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.sidebar-footer {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px 8px 0;
+  border-top: 1px solid var(--line);
+  font-size: 13px;
+}
+
+.content {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 800px) {
+  .app-shell {
+    flex-direction: column;
+  }
+  .sidebar {
+    width: 100%;
+    height: auto;
+    position: static;
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sidebar .brand {
+    padding: 0 12px 0 0;
+  }
+  .sidebar-nav {
+    flex-direction: row;
+    flex: 1;
+  }
+  .sidebar-footer {
+    flex-direction: row;
+    align-items: center;
+    border-top: none;
+    padding: 0;
+  }
+}
+
 .card {
   background: var(--card);
   border: 1px solid var(--line);
@@ -46,37 +141,6 @@ a {
 .mono {
   font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
   word-break: break-all;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 14px 20px;
-  border-bottom: 1px solid var(--line);
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(8px);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
-
-.brand {
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-.nav-links {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  flex-wrap: wrap;
-}
-
-.nav-links a.router-link-active {
-  color: var(--accent);
-  font-weight: 600;
 }
 
 .grid-2 {

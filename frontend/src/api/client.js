@@ -72,6 +72,11 @@ export async function getEvents(id) {
   return data
 }
 
+export async function getReplay(id, version) {
+  const { data } = await api.get(`/runs/${id}/replay`, { params: { version } })
+  return data
+}
+
 export async function getLineage(id) {
   const { data } = await api.get(`/runs/${id}/lineage`)
   return data

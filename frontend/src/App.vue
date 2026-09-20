@@ -2,16 +2,26 @@
   <n-config-provider :locale="zhCN" :date-locale="dateZhCN">
     <n-message-provider>
       <n-dialog-provider>
-        <div v-if="auth.token" class="topbar">
-          <div class="brand">科学实验溯源工作台</div>
-          <div class="nav-links">
-            <router-link to="/runs">Run 列表</router-link>
-            <router-link v-if="auth.role === 'researcher'" to="/runs/new">新建 Run</router-link>
-            <span class="muted">{{ auth.username }}（{{ roleLabel }}）</span>
-            <n-button size="small" quaternary @click="logout">退出</n-button>
-          </div>
+        <div v-if="!auth.token" class="login-shell">
+          <router-view />
         </div>
-        <router-view />
+        <div v-else class="app-shell">
+          <aside class="sidebar">
+            <div class="brand">科学实验溯源工作台</div>
+            <nav class="sidebar-nav">
+              <router-link to="/runs">Run 列表</router-link>
+              <router-link v-if="auth.role === 'researcher'" to="/runs/new">新建 Run</router-link>
+              <router-link to="/replay">事件回放</router-link>
+            </nav>
+            <div class="sidebar-footer">
+              <div class="muted">{{ auth.username }}（{{ roleLabel }}）</div>
+              <n-button size="small" quaternary @click="logout">退出</n-button>
+            </div>
+          </aside>
+          <main class="content">
+            <router-view />
+          </main>
+        </div>
       </n-dialog-provider>
     </n-message-provider>
   </n-config-provider>
